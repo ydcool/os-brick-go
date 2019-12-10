@@ -125,14 +125,14 @@ func Mkfs(device, fsType string) error {
 func UnmountDir(dir string, rmDir bool) error {
 	// umount /opt/kubelet/pods/xxx/volumes/xxx
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		logrus.Warnf("execute umount: dir %s seems no longer exists.", dir)
+		log.Printf("execute umount: dir %s seems no longer exists.", dir)
 		return nil
 	}
 
 	out, err := ExecWithTimeout(time.Second*10, "umount", dir)
 	if err != nil {
 		if strings.Contains(err.Error(), "no such file or directory") {
-			logrus.Warnf("execute umount faild, file already deleted")
+			log.Printf("execute umount faild, file already deleted")
 			return nil
 		}
 		return fmt.Errorf("execute umount failed: %v", err)

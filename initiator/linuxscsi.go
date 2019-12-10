@@ -42,7 +42,7 @@ func FlushDeviceIO(device string) error {
 		osBrick.RunWithRetry(3, time.Second*10, func(_ int) bool {
 			out, err := osBrick.ExecWithTimeout(time.Minute*3, "blockdev", "--flushbufs", device)
 			if err != nil {
-				logrus.WithError(err).Warnf("failed execute blockdev --flushbufs %s: %s", device, out)
+				log.Printf("failed execute blockdev --flushbufs %s: %s, ERROR: %v", device, out, err)
 				return false
 			}
 			log.Printf("execute blockdev --flushbufs %s: %s", device, out)
@@ -149,7 +149,7 @@ func FindMultipathDevice(deviceName string) (map[string]interface{}, error) {
 				if strings.Contains(l, "policy") {
 					continue
 				}
-				devLine := strings.TrimLeft(l, " |-`") //TODO make sure will this works
+				devLine := strings.TrimLeft(l, " |-`")
 				devInfo := strings.Split(devLine, " ")
 				address := strings.Split(devInfo[0], ":")
 				dev := MultipathDevice{
@@ -275,7 +275,7 @@ func EchoSCSICommand(path, content string) error {
 func GetNameFromPath(path string) string {
 	name, err := filepath.EvalSymlinks(path)
 	if err != nil {
-		logrus.WithError(err).Error("failed get realpath for path:", path)
+		log.Printf("failed get realpath for path: %s, ERROR: %v", path, err)
 		return ""
 	}
 	if strings.HasPrefix(name, "/dev/") {
@@ -381,7 +381,7 @@ func DoExtendVolume(volumePaths []string, useMultipath bool) (float64, error) {
 	for _, volumePath := range volumePaths {
 		device, err := GetDeviceInfo(volumePath)
 		if err != nil {
-			logrus.WithError(err).Errorf("failed get device info for path: %s", volumePath)
+			log.Printf("failed get device info for path: %s, ERROR: %v", volumePath, err)
 			continue
 		}
 		log.Printf("volume device info: %#v", device)
@@ -389,7 +389,7 @@ func DoExtendVolume(volumePaths []string, useMultipath bool) (float64, error) {
 		scsiPath := fmt.Sprintf("/sys/bus/scsi/drivers/sd/%s", deviceId)
 		size, err := GetDeviceSize(volumePath)
 		if err != nil {
-			logrus.WithError(err).Error("failed get device size for path: ", volumePath)
+			log.Printf("failed get device size for path: %s, ERROR: %v", volumePath, err)
 			continue
 		}
 		log.Printf("starting size: %f", size)
@@ -397,11 +397,11 @@ func DoExtendVolume(volumePaths []string, useMultipath bool) (float64, error) {
 		//now issue the device rescan
 		err = EchoSCSICommand(scsiPath+"/rescan", "1")
 		if err != nil {
-			logrus.WithError(err).Error("failed echo '1' > ", scsiPath+"/rescan")
+			log.Printf("failed echo '1' > %s, ERROR: %s", scsiPath+"/rescan", err)
 		}
 		newSize, err = GetDeviceSize(volumePath)
 		if err != nil {
-			logrus.WithError(err).Error("failed get device size for path: ", volumePath)
+			log.Printf("failed get device size for path: %s, ERROR: %s", volumePath, err)
 			continue
 		}
 		log.Printf("volume size after scsi device rescan %f", newSize)
@@ -425,7 +425,7 @@ func DoExtendVolume(volumePaths []string, useMultipath bool) (float64, error) {
 			if err != nil {
 				return 0, fmt.Errorf("failed get device size for path %s after reconfigure: ", mPathDevice)
 			}
-			logrus.Infof("mpath %s current size: %f", mPathDevice, size)
+			log.Printf("mpath %s current size: %f", mPathDevice, size)
 			result, err := MultipathResizeMap(scsiWWN)
 			if err != nil {
 				return 0, fmt.Errorf("failed multipath resize map: %v", err)
@@ -470,6 +470,6 @@ func GetDeviceSize(path string) (float64, error) {
 //	to issue a reconfigure prior to resize map.
 func MultipathReConfigure() error {
 	out, err := osBrick.Execute("multipathd", "reconfigure")
-	logrus.Debug("execute multipathd reconfigure: ", out)
+	log.Printf("execute multipathd reconfigure: %s", out)
 	return err
 }
