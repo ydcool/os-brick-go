@@ -6,4 +6,4 @@ This repository is still work in progress, currently finished with fibre channel
 
 ## License
 
-Apache 2
+[Apache 2](LICENSE)
