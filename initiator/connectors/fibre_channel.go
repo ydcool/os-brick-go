@@ -115,6 +115,9 @@ func ConnectVolume(connectionProperties map[string]interface{}) (map[string]stri
 	log.Printf("possibleVolumePaths: %#v", hostDevices)
 
 	var hostDevice, deviceName string
+	// The /dev/disk/by-path/... node is not always present immediately
+	// We only need to find the first device.  Once we see the first device
+	// multipath will have any others.
 	if !osBrick.RunWithRetry(initiator.DeviceScanAttemptsDefault, time.Second*5, func(_ int) bool {
 		for _, dev := range hostDevices {
 			if osBrick.IsFileExists(dev) && osBrick.CheckValidDevice(dev) {
